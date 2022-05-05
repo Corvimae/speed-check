@@ -36,6 +36,59 @@ interface HoraroScheduleRow {
   data: string[];
 }
 
+interface GDQTrackerRun {
+  pk: number;
+  fields: {
+    order: number | null;
+    runners: number[];
+  };
+}
+interface GDQTrackerRunner {
+  pk: number;
+  fields: {
+    name: string;
+    stream: string;
+    pronouns: string;
+  };
+}
+
+export async function fetchNormalizedGDQTrackerData(eventUrl: string): Promise<NormalizedEventData> {
+  const [trackerUrl, event] = eventUrl.split('/event/');
+  const query = Number.isNaN(Number(event)) ? `short=${event}` : `id=${event}`;
+  const marathonInfoResponse = await fetch(`${trackerUrl}/search?type=event&${query}`);
+  const marathonInfo = await marathonInfoResponse.json();
+
+  if (marathonInfo.length === 0) throw new Error('The event could not be found in the tracker instance.');
+
+  const eventId = marathonInfo[0].pk;
+
+  const runInfoResponse = await fetch(`${trackerUrl}/search?type=run&event=${eventId}`);
+  const runInfo: GDQTrackerRun[] = await runInfoResponse.json();
+
+  const runnerInfoResponse = await fetch(`${trackerUrl}/search?type=runner&event=${eventId}`);
+  const runnerInfo: GDQTrackerRunner[] = await runnerInfoResponse.json();
+
+  const runnerNameById = runnerInfo.reduce((acc, runner) => ({
+    ...acc,
+    [runner.pk]: runner.fields.name,
+  }), {} as Record<number, string>);
+
+  return {
+    source: 'gdqtracker',
+    name: marathonInfo[0].fields.name,
+    runners: runnerInfo.map(runner => ({
+      username: runner.fields.name,
+      pronouns: runner.fields.pronouns?.toLowerCase(),
+      twitch: runner.fields.stream?.replace('https://twitch.tv/', ''),
+    })),
+    scheduled: runInfo
+      .filter(run => run.fields.order !== null)
+      .flatMap(run => run.fields.runners)
+      .map(id => runnerNameById[id])
+      .filter(name => name !== undefined && name !== null),
+  };
+}
+
 const VALID_RUNNER_COLUMNS = ['runner', 'runners', 'runner(s)', 'player', 'players', 'player(s)'];
 
 export async function fetchNormalizedHoraroData(organization: string, event: string): Promise<NormalizedEventData> {

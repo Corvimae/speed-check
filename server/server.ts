@@ -3,7 +3,7 @@ import next from 'next';
 import fetch from'isomorphic-fetch';
 import { uniq } from 'lodash';
 import NodeCache from 'node-cache';
-import { fetchNormalizedHoraroData, fetchNormalizedOengusData, NormalizedEventData, NormalizedRunnerData } from './normalizers';
+import { fetchNormalizedGDQTrackerData, fetchNormalizedHoraroData, fetchNormalizedOengusData, NormalizedEventData, NormalizedRunnerData } from './normalizers';
 
 function dedupePronounList(list: Record<string, string[]>) {
   return Object.entries(list).reduce((acc, [key, value]) => ({
@@ -213,9 +213,8 @@ app.prepare().then(async () => {
       }
     });
 
-    server.get('/calculate/horaro/:organization/:event', async (req, res) => {
-      const organization = req.params.organization as string;
-      const event = req.params.event as string;
+    server.get('/calculate/horaro/:path', async (req, res) => {
+      const [organization, event] = (req.params.path as string).split('/');
       
       if (organization && event) {
         try {
@@ -227,6 +226,22 @@ app.prepare().then(async () => {
         }
       } else {
         res.status(400).json({ error: 'Organization and event are required.' });
+      }
+    });
+
+    server.get('/calculate/gdq-tracker/:path', async (req, res) => {
+      const path = req.params.path as string;
+      
+      if (path) {
+        try {
+          const data = await fetchNormalizedGDQTrackerData(path);
+
+          await calculateForNormalizedData(res, data);
+        } catch (e) {
+          res.status(400).json({ error: (e as Error).message });
+        }
+      } else {
+        res.status(400).json({ error: 'Tracker event path is required.' });
       }
     });
     

@@ -19,7 +19,6 @@ interface PronounCalculationBlock {
   counts: PronounResultsBlock;
   percentages: PronounResultsBlock;
   normalizedPercentages: PronounResultsBlock;
-
 }
 interface PronounResults {
   name: string;
@@ -27,9 +26,9 @@ interface PronounResults {
   schedule: PronounCalculationBlock | null;
 }
 
-type Source = 'oengus' | 'horaro';
+type Source = 'oengus' | 'horaro' | 'gdq-tracker';
 
-const SOURCE_CONFIGS: Record<Source, { baseUrl: string; description: string; }> = {
+const SOURCE_CONFIGS: Record<Source, { baseUrl: string | null; description: string; }> = {
   oengus: {
     baseUrl: 'https://v1.oengus.io/marathon/',
     description: 'Oengus slug',
@@ -37,6 +36,10 @@ const SOURCE_CONFIGS: Record<Source, { baseUrl: string; description: string; }> 
   horaro: {
     baseUrl: 'https://horaro.org/',
     description: 'Horaro path',
+  },
+  'gdq-tracker': {
+    baseUrl: null,
+    description: 'donation tracker event page',
   },
 };
 
@@ -52,8 +55,7 @@ const Home: NextPage = () => {
     setResults(null);
     setError(null);
 
-    const response = await fetch(`/calculate/${source}/${marathonUrl}`);
-
+    const response = await fetch(`/calculate/${source}/${encodeURIComponent(marathonUrl)}`);
 
     if (response.status === 200) {
       const results = await response.json();
@@ -116,12 +118,13 @@ const Home: NextPage = () => {
             <select id="sourceSelector" value={source} onChange={handleChangeSource}>
               <option value='oengus'>Oengus</option>
               <option value='horaro'>Horaro</option>
+              <option value='gdq-tracker'>GDQ Donation Tracker</option>
             </select>
           </SourceSelectorContainer>
           <InputSection>
             <MarathonUrlInputLabel htmlFor="marathonUrlInput">Enter the {SOURCE_CONFIGS[source].description} for your marathon</MarathonUrlInputLabel>
             <UrlInputContainer>
-              <UrlPrefix>{SOURCE_CONFIGS[source].baseUrl}</UrlPrefix>
+              {SOURCE_CONFIGS[source].baseUrl && (<UrlPrefix>{SOURCE_CONFIGS[source].baseUrl}</UrlPrefix>)}
               <UrlInput id="marathonUrlInput" onChange={handleChangeMarathonUrl} />
             </UrlInputContainer>
             <SubmitButton disabled={marathonUrl.trim().length === 0 || isLoading} onClick={handleSubmit}>
@@ -314,6 +317,12 @@ const UrlInput = styled.input`
   height: 2.625rem;
   border-radius: 0 0.25rem 0.25rem 0;
   border: 1px solid #999;
+
+  &:only-child {
+    border-radius: 0.25rem;
+    width: 40rem;
+    text-align: center;
+  }
 `;
 
 const UrlInputContainer = styled.div`
