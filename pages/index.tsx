@@ -30,15 +30,21 @@ interface PronounResults {
 const Home: NextPage = () => {
   const [marathonUrl, setMarathonUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<PronounResults | null>(null);
 
   const handleSubmit = useCallback(async () => {
     setIsLoading(true);
     setResults(null);
+    setError(null);
 
     const response = await fetch(`/calculate?slug=${encodeURIComponent(marathonUrl)}`);
 
-    setResults(await response.json());
+    if (response.status === 200) {
+      setResults(await response.json());
+    } else {
+      setError('Either the marathon slug is invalid, or Speed Check could not connect to the Oengus API.');
+    }
     setIsLoading(false);
   }, [marathonUrl]);
 
@@ -92,6 +98,9 @@ const Home: NextPage = () => {
                 <div>Calculating, just a moment...</div>
                 <LoadingIcon><div /><div /></LoadingIcon>
               </LoadingContainer>
+            )}
+            {error && (
+              <ErrorCard>{error}</ErrorCard>
             )}
             {results && (
               <ResultsSection>
