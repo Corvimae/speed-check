@@ -43,7 +43,7 @@ const Home: NextPage = () => {
     if (response.status === 200) {
       setResults(await response.json());
     } else {
-      setError('Either the marathon slug is invalid, or Speed Check could not connect to the Oengus API.');
+      setError('Either the marathon slug is invalid (it\'s case sensitive, by the way!), or Speed Check could not connect to the Oengus API.');
     }
     setIsLoading(false);
   }, [marathonUrl]);
