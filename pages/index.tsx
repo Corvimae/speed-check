@@ -2,7 +2,7 @@ import type { NextPage } from 'next'
 import React, { useCallback, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import Head from 'next/head';
-import { Tooltip } from 'react-tippy';
+import Tippy from '@tippyjs/react';
 
 const OTHER_DISCLAIMER = `All runners with specified pronouns other than "he/him" and "she/her" are grouped under Other. Non-binary pronouns are not normalized enough to provide useful data without this simplification.`;
 const UNSPECIFIED_DESCRIPTION = `If we cannot find pronouns on Oengus, Speedrun.com, or the Twitch Pronoun extension, the runner is considered unspecified.`;
@@ -96,9 +96,9 @@ const Home: NextPage = () => {
                       <th>Count</th>
                       <th>Perecentage</th>
                       <th>
-                        <Tooltip title={NORMALIZED_PERCENTAGE_DESCRIPTION} position="bottom" arrow distance={8} duration={0}>
+                        <Tippy content={NORMALIZED_PERCENTAGE_DESCRIPTION} arrow duration={0}>
                           <HasTooltip>Normalized Percentage</HasTooltip>
-                        </Tooltip>
+                        </Tippy>
                       </th>
                     </tr>
                   </thead>
@@ -117,9 +117,9 @@ const Home: NextPage = () => {
                     </tr>
                     <tr>
                       <td>
-                        <Tooltip title={OTHER_DISCLAIMER} position="bottom" arrow distance={8} duration={0}>
+                        <Tippy content={OTHER_DISCLAIMER} arrow duration={0}>
                           <HasTooltip>Other</HasTooltip>
-                        </Tooltip>
+                        </Tippy>
                       </td>
                       <td>{results.submissions.counts.other}</td>
                       <td>{(results.submissions.percentages.other * 100).toFixed(2)}%</td>
@@ -127,9 +127,9 @@ const Home: NextPage = () => {
                     </tr>
                     <tr>
                       <td>
-                        <Tooltip title={UNSPECIFIED_DESCRIPTION} position="bottom" arrow distance={8} duration={0}>
+                        <Tippy content={UNSPECIFIED_DESCRIPTION} arrow duration={0}>
                           <HasTooltip>Unspecified</HasTooltip>
-                        </Tooltip>
+                        </Tippy>
                       </td>
                       <td>{results.submissions.counts.none}</td>
                       <td>{(results.submissions.percentages.none * 100).toFixed(2)}%</td>
@@ -147,9 +147,9 @@ const Home: NextPage = () => {
                           <th>Count</th>
                           <th>Perecentage</th>
                           <th>
-                            <Tooltip title={NORMALIZED_PERCENTAGE_DESCRIPTION} position="bottom" arrow distance={8} duration={0}>
+                            <Tippy content={NORMALIZED_PERCENTAGE_DESCRIPTION} arrow duration={0}>
                               <HasTooltip>Normalized Percentage</HasTooltip>
-                            </Tooltip>
+                            </Tippy>
                           </th>
                         </tr>
                       </thead>
@@ -168,9 +168,9 @@ const Home: NextPage = () => {
                         </tr>
                         <tr>
                           <td>
-                            <Tooltip title={OTHER_DISCLAIMER} position="bottom" arrow distance={8} duration={0}>
-                            <HasTooltip>Other</HasTooltip>
-                            </Tooltip>
+                            <Tippy content={OTHER_DISCLAIMER} arrow duration={0}>
+                              <HasTooltip>Other</HasTooltip>
+                            </Tippy>
                           </td>
                           <td>{results.schedule.counts.other}</td>
                           <td>{(results.schedule.percentages.other * 100).toFixed(2)}%</td>
@@ -178,9 +178,9 @@ const Home: NextPage = () => {
                         </tr>
                         <tr>
                           <td>
-                            <Tooltip title={UNSPECIFIED_DESCRIPTION} position="bottom" arrow distance={8} duration={0}>
+                            <Tippy content={UNSPECIFIED_DESCRIPTION} arrow duration={0}>
                               <HasTooltip>Unspecified</HasTooltip>
-                            </Tooltip>
+                            </Tippy>
                           </td>
                           <td>{results.schedule.counts.none}</td>
                           <td>{(results.schedule.percentages.none * 100).toFixed(2)}%</td>
