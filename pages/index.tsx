@@ -153,7 +153,7 @@ const Home: NextPage = () => {
                     <tr>
                       <th>Pronouns</th>
                       <th>Count</th>
-                      <th>Perecentage</th>
+                      <th>Percentage</th>
                       <th>
                         <Tippy content={NORMALIZED_PERCENTAGE_DESCRIPTION} arrow duration={0}>
                           <HasTooltip>Normalized Percentage</HasTooltip>
