@@ -3,20 +3,31 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "yarn build:server && node dist/server.js",
+    "build": "yarn build:frontend && yarn build:server",
+    "build:frontend": "next build",
+    "build:server": "tsc --project server.tsconfig.json",
+    "start": "NODE_ENV=production node dist/server.js",
     "lint": "next lint"
   },
   "dependencies": {
+    "express": "^4.18.1",
+    "isomorphic-fetch": "^3.0.0",
+    "lodash": "^4.17.21",
     "next": "12.1.6",
     "react": "18.1.0",
-    "react-dom": "18.1.0"
+    "react-dom": "18.1.0",
+    "react-tippy": "^1.4.0",
+    "styled-components": "^5.3.5"
   },
   "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/isomorphic-fetch": "^0.0.36",
+    "@types/lodash": "^4.14.182",
     "@types/node": "17.0.31",
     "@types/react": "18.0.8",
     "@types/react-dom": "18.0.3",
+    "@types/styled-components": "^5.1.25",
     "eslint": "8.14.0",
     "eslint-config-next": "12.1.6",
     "typescript": "4.6.4"

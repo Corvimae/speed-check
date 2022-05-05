@@ -1,34 +1,26 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# speed-check
 
-## Getting Started
+A webpage for determining how gender diverse a speedrun marathon listed on Oengus is.
 
-First, run the development server:
+## Disclaimer
+I recognize that pronouns are not necessarily reflective of one's gender identity; however, they're the only
+publicly available data source for determining any sort of empirical metrics on gender representation in
+speedrunning. For this reason, the results are displayed as simply an aggregation of pronouns, rather than 
+as any sort of judgment on what genders those pronouns might represent.
 
-```bash
-npm run dev
-# or
-yarn dev
-```
+Any pronouns other than "he/him" and "she/her" (normalized for capitalization) are considered "other", as otherwise the data is extremely noisy - non-binary pronouns are not normalized across multiple data sources and I don't want to make assumptions. This
+tool is primarily designed for determining trends of minority gender representation overall rather than for
+more granular observations, as the data simply doesn't permit it.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Pronoun Normalization Methodology
+Given a marathon in Oengus:
+1. Fetch all the submissions.
+2. For each unique runner, see if their pronouns are set in Oengus.
+3. If they're not, see if they've linked their speedrun.com profile and fetch from the SRC API. If they didn't link their SRC profile, see if there's a SRC profile matching their username and use that.
+4. If that doesn't provide any pronouns, see if they've linked their Twitch account and fetch from the Twitch pronouns extension API at pronouns.alejo.io. If they didn't link their Twitch account, see if there's a Twitch account matching their username and use that.
+5. If that _still_ doesn't provide any pronouns, we're out of options and we'll just assume they haven't provided them.
+6. If a runner's pronouns are he/him or she/her, bucket them as such. Any other pronouns are bucked under 'other'.
+7. If the marathon has a published schedule, use the data from above to determine schedule pronoun distribution as well.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
-
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
-
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## Normalized Percentages
+The `normalizedPercentages` data is calculated by throwing out all of the `none` results; that is, we assume that unspecified pronouns adhere to the same ratio as the rest of the submissions.
