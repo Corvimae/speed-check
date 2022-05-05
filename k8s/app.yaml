@@ -8,7 +8,7 @@ spec:
   - port: 3000
     targetPort: 3000
   selector:
-    app: speed-check-run
+    app: speed-check
 ---
 apiVersion: apps/v1
 kind: Deployment
