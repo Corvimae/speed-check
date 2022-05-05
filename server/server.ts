@@ -53,7 +53,9 @@ function countsToNormalizedPercentages(list: Record<string, number> | null) {
 
 async function fetchForUsername(baseUrl: string, submitter: NormalizedRunnerData, platform: 'twitch' | 'speedruncom') {
   const username = submitter[platform] ?? submitter.username;
-  const userRequest = await fetch(`${baseUrl}${username}`);
+  const userRequest = await fetch(`${baseUrl}${encodeURIComponent(username)}`);
+
+  if (userRequest.status !== 200) return null;
   
   return await userRequest.json();
 }
@@ -79,7 +81,7 @@ async function calculateForNormalizedData(res: Response, data: NormalizedEventDa
         // Request from SRC
         const srcUserData = await fetchForUsername('https://www.speedrun.com/api/v1/users/', submitter, 'speedruncom');
 
-        if (srcUserData.data?.pronouns) {
+        if (srcUserData?.data?.pronouns) {
           runnerDataCache.set(submitter.username, srcUserData.data.pronouns.toLowerCase());
 
           return {
@@ -90,7 +92,7 @@ async function calculateForNormalizedData(res: Response, data: NormalizedEventDa
 
         const twitchUserData = await fetchForUsername('https://pronouns.alejo.io/api/users/', submitter, 'twitch');
 
-        if (twitchUserData.length > 0) {
+        if (twitchUserData?.length > 0) {
           let pronouns = 'other';
 
           if (twitchUserData[0].pronoun_id === 'sheher') {
