@@ -45,8 +45,6 @@ export async function fetchNormalizedHoraroData(organization: string, event: str
   const runnerColumn = (marathonInfo.schedule.columns as string[]).findIndex(item => {
     const normalized = item.toLowerCase();
 
-    console.log('normalized', normalized);
-
     return VALID_RUNNER_COLUMNS.indexOf(normalized) !== -1;
   });
 
@@ -54,7 +52,7 @@ export async function fetchNormalizedHoraroData(organization: string, event: str
   
   return {
     source: 'horaro',
-    name: marathonInfo.schedule.name,
+    name: `${marathonInfo.schedule.event.name} - ${marathonInfo.schedule.name}`,
     runners: (marathonInfo.schedule.items as HoraroScheduleRow[]).reduce((acc, row) => [
       ...acc,
       ...row.data[runnerColumn].split(',').map((name: String) => ({

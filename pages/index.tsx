@@ -276,6 +276,7 @@ const MainSection = styled.div`
   display: flex;
   min-height: 0;
   flex-direction: column;
+  align-items: center;
   align-self: stretch;
   flex-grow: 1;
   overflow-y: auto;
@@ -335,6 +336,7 @@ const Subtitle = styled.h2`
 `;
 
 const MethodologyLink = styled.a`
+  max-width: max-content;
   font-size: 1.25rem;
   margin-bottom: 1rem;
   text-align: center;
@@ -442,7 +444,6 @@ const ResultsSubtitle = styled.h3`
 `;
 
 const ResultsTable = styled.table`
-  margin: 0 auto;
   font-size: 1.25rem;
 
   & th,
