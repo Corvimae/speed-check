@@ -1,5 +1,5 @@
 import type { NextPage } from 'next'
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import Head from 'next/head';
 import Tippy from '@tippyjs/react';
@@ -13,6 +13,7 @@ interface PronounResultsBlock {
   other: number;
   none: number;
   notFound?: number;
+  error: number;
 }
 interface PronounCalculationBlock {
   counts: PronounResultsBlock;
@@ -33,6 +34,7 @@ const Home: NextPage = () => {
 
   const handleSubmit = useCallback(async () => {
     setIsLoading(true);
+    setResults(null);
 
     const response = await fetch(`/calculate?slug=${encodeURIComponent(marathonUrl)}`);
 
@@ -43,6 +45,12 @@ const Home: NextPage = () => {
   const handleChangeMarathonUrl = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setMarathonUrl(event.target.value);
   }, []);
+
+  const totalErrors = useMemo(() => {
+    if (!results) return 0;
+
+    return results.submissions.counts.error + (results.schedule?.counts.error ?? 0);
+  }, [results]);
 
   return (
     <div>
@@ -88,6 +96,12 @@ const Home: NextPage = () => {
             {results && (
               <ResultsSection>
                 <ResultsTitle>Results for {results.name}</ResultsTitle>
+                {totalErrors > 0 && (
+                  <ErrorCard>
+                    There were issues while normalizing pronouns for {totalErrors} runner{totalErrors !== 1 ? 's' : ''}. 
+                    Try again later for more accurate results.
+                  </ErrorCard>
+                )}
                 <ResultsSubtitle>Submissions</ResultsSubtitle>
                 <ResultsTable>
                   <thead>
@@ -377,6 +391,7 @@ const ResultsSection = styled.section`
 const ResultsTitle = styled.h2`
   font-weight: 700;
   font-size: 2rem;
+  text-align: center;
 `;
 
 const ResultsSubtitle = styled.h3`
@@ -412,4 +427,13 @@ const Footer = styled.div`
   & a {
     color: #acd3ff;
   }
+`;
+
+const ErrorCard = styled.div`
+  padding: 1rem;
+  background-color: #ffc6c6;
+  border: 1px solid #923a3a;
+  color: #3f0909;
+  margin: 1rem 0;
+  font-size: 1.25rem;
 `;

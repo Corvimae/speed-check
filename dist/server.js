@@ -8,6 +8,7 @@ const express_1 = __importDefault(require("express"));
 const next_1 = __importDefault(require("next"));
 const isomorphic_fetch_1 = __importDefault(require("isomorphic-fetch"));
 const lodash_1 = require("lodash");
+const node_cache_1 = __importDefault(require("node-cache"));
 function dedupePronounList(list) {
     return Object.entries(list).reduce((acc, [key, value]) => (Object.assign(Object.assign({}, acc), { [key]: (0, lodash_1.uniq)(value) })), {});
 }
@@ -26,7 +27,7 @@ function countsToNormalizedPercentages(list) {
     if (!list)
         return null;
     const total = Object.entries(list).reduce((acc, [key, value]) => {
-        if (key === 'none')
+        if (key === 'none' || key === 'error')
             return acc;
         return acc + value;
     }, 0);
@@ -47,6 +48,7 @@ const port = parseInt((_a = process.env.PORT) !== null && _a !== void 0 ? _a : '
 const dev = process.env.NODE_ENV !== 'production';
 const app = (0, next_1.default)({ dev });
 const handle = app.getRequestHandler();
+const runnerDataCache = new node_cache_1.default({ stdTTL: 3600 });
 app.prepare().then(async () => {
     try {
         const server = (0, express_1.default)();
@@ -61,10 +63,14 @@ app.prepare().then(async () => {
                     const submittersWithPronounsPromises = submissions.map(async (submitter) => {
                         var _a;
                         if (!submitter.user.pronouns) {
+                            if (runnerDataCache.has(submitter.user.username)) {
+                                return Object.assign(Object.assign({}, submitter), { user: Object.assign(Object.assign({}, submitter.user), { pronouns: runnerDataCache.get(submitter.user.username) }) });
+                            }
                             try {
                                 // Request from SRC
                                 const srcUserData = await fetchForUsername('https://www.speedrun.com/api/v1/users/', submitter, 'SPEEDRUNCOM');
                                 if ((_a = srcUserData.data) === null || _a === void 0 ? void 0 : _a.pronouns) {
+                                    runnerDataCache.set(submitter.user.username, srcUserData.data.pronouns.toLowerCase());
                                     return Object.assign(Object.assign({}, submitter), { user: Object.assign(Object.assign({}, submitter.user), { pronouns: srcUserData.data.pronouns.toLowerCase() }) });
                                 }
                                 const twitchUserData = await fetchForUsername('https://pronouns.alejo.io/api/users/', submitter, 'TWITCH');
@@ -76,14 +82,15 @@ app.prepare().then(async () => {
                                     else if (twitchUserData[0].pronoun_id === 'hehim') {
                                         pronouns = 'he/him';
                                     }
+                                    runnerDataCache.set(submitter.user.username, pronouns);
                                     return Object.assign(Object.assign({}, submitter), { user: Object.assign(Object.assign({}, submitter.user), { pronouns }) });
                                 }
                                 return submitter;
                             }
                             catch (e) {
-                                console.error('SRC API request failed.');
+                                console.error('Pronoun API request failed.');
                                 console.error(e);
-                                return submitter;
+                                return Object.assign(Object.assign({}, submitter), { user: Object.assign(Object.assign({}, submitter.user), { pronouns: 'error' }) });
                             }
                         }
                         return submitter;
@@ -93,11 +100,11 @@ app.prepare().then(async () => {
                         if (!user.pronouns) {
                             return Object.assign(Object.assign({}, acc), { none: [...acc.none, user.username] });
                         }
-                        if (user.pronouns === 'she/her' || user.pronouns === 'he/him') {
+                        if (user.pronouns === 'she/her' || user.pronouns === 'he/him' || user.pronouns === 'error') {
                             return Object.assign(Object.assign({}, acc), { [user.pronouns]: [...acc[user.pronouns], user.username] });
                         }
                         return Object.assign(Object.assign({}, acc), { other: [...acc.other, user.username] });
-                    }, { none: [], 'she/her': [], 'he/him': [], other: [] }));
+                    }, { none: [], 'she/her': [], 'he/him': [], other: [], error: [] }));
                     const scheduleResponse = await (0, isomorphic_fetch_1.default)(`https://oengus.io/api/marathons/${slug}/schedule`);
                     const schedule = await scheduleResponse.json();
                     let schedulePronouns = null;
@@ -114,7 +121,7 @@ app.prepare().then(async () => {
                                 return Object.assign(Object.assign({}, acc), { [submitter.user.pronouns]: [...acc[submitter.user.pronouns], submitter.user.username] });
                             }
                             return Object.assign(Object.assign({}, acc), { other: [...acc.other, submitter.user.username] });
-                        }, acc)), { none: [], 'she/her': [], 'he/him': [], other: [], notFound: [] }));
+                        }, acc)), { none: [], 'she/her': [], 'he/him': [], other: [], notFound: [], error: [] }));
                     }
                     const submissionCounts = listToCounts(pronounLists);
                     const scheduleCounts = listToCounts(schedulePronouns);

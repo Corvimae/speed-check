@@ -2,6 +2,7 @@ import express from 'express';
 import next from 'next';
 import fetch from'isomorphic-fetch';
 import { uniq } from 'lodash';
+import NodeCache from 'node-cache';
 
 interface Submitter {
   user: {
@@ -51,7 +52,7 @@ function countsToNormalizedPercentages(list: Record<string, number> | null) {
   if (!list) return null;
 
   const total = Object.entries(list).reduce((acc, [key, value]) => {
-    if (key === 'none') return acc;
+    if (key === 'none' || key === 'error') return acc;
 
     return acc + value;
   }, 0);
@@ -79,6 +80,8 @@ const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
+const runnerDataCache = new NodeCache({ stdTTL: 3600 });
+
 app.prepare().then(async () => {
   try {
     const server = express();
@@ -96,11 +99,23 @@ app.prepare().then(async () => {
 
           const submittersWithPronounsPromises: Promise<Submitter>[] = submissions.map(async (submitter: Submitter) => {
             if (!submitter.user.pronouns) {
+              if (runnerDataCache.has(submitter.user.username)) {
+                return {
+                  ...submitter,
+                  user: {
+                    ...submitter.user,
+                    pronouns: runnerDataCache.get(submitter.user.username),
+                  },
+                };
+              }
+
               try {
                 // Request from SRC
                 const srcUserData = await fetchForUsername('https://www.speedrun.com/api/v1/users/', submitter, 'SPEEDRUNCOM');
 
                 if (srcUserData.data?.pronouns) {
+                  runnerDataCache.set(submitter.user.username, srcUserData.data.pronouns.toLowerCase());
+
                   return {
                     ...submitter,
                     user: {
@@ -121,6 +136,8 @@ app.prepare().then(async () => {
                     pronouns = 'he/him';
                   }
 
+                  runnerDataCache.set(submitter.user.username, pronouns);
+
                   return {
                     ...submitter,
                     user: {
@@ -131,9 +148,16 @@ app.prepare().then(async () => {
                 }
                 return submitter;
               } catch (e) {
-                console.error('SRC API request failed.');
+                console.error('Pronoun API request failed.');
                 console.error(e);
-                return submitter;
+
+                return {
+                  ...submitter,
+                  user: {
+                    ...submitter.user,
+                    pronouns: 'error',
+                  },
+                };
               }
             }
 
@@ -147,7 +171,7 @@ app.prepare().then(async () => {
               return { ...acc, none: [...acc.none, user.username] };
             }
 
-            if (user.pronouns === 'she/her' || user.pronouns === 'he/him') {
+            if (user.pronouns === 'she/her' || user.pronouns === 'he/him' || user.pronouns === 'error') {
               return {
                 ...acc,
                 [user.pronouns]: [...acc[user.pronouns], user.username],
@@ -158,7 +182,7 @@ app.prepare().then(async () => {
               ...acc,
               other: [...acc.other, user.username],
             };
-          }, { none: [], 'she/her': [], 'he/him': [], other: [] } as Record<string, string[]>));
+          }, { none: [], 'she/her': [], 'he/him': [], other: [], error: [] } as Record<string, string[]>));
 
           const scheduleResponse = await fetch(`https://oengus.io/api/marathons/${slug}/schedule`);
           const schedule = await scheduleResponse.json();
@@ -193,7 +217,7 @@ app.prepare().then(async () => {
                   other: [...acc.other, submitter.user.username],
                 };
               }, acc)
-            ), { none: [], 'she/her': [], 'he/him': [], other: [], notFound: [] } as Record<string, string[]>));
+            ), { none: [], 'she/her': [], 'he/him': [], other: [], notFound: [], error: [] } as Record<string, string[]>));
           }
 
           const submissionCounts = listToCounts(pronounLists);
