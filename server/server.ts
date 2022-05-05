@@ -67,6 +67,9 @@ const handle = app.getRequestHandler();
 
 const runnerDataCache = new NodeCache({ stdTTL: 3600 });
 
+const HE_HIM_PRONOUNS_SETS = ['he/him', 'he / him', 'he', 'him'];
+const SHE_HER_PRONOUNS_SETS = ['she/her', 'she / her', 'she', 'her'];
+
 async function calculateForNormalizedData(res: Response, data: NormalizedEventData) {
   const submittersWithPronounsPromises: Promise<NormalizedRunnerData>[] = data.runners.map(async (submitter: NormalizedRunnerData) => {
     if (!submitter.pronouns) {
@@ -131,10 +134,23 @@ async function calculateForNormalizedData(res: Response, data: NormalizedEventDa
       return { ...acc, none: [...acc.none, user.username] };
     }
 
-    if (user.pronouns === 'she/her' || user.pronouns === 'he/him' || user.pronouns === 'error') {
+    if (SHE_HER_PRONOUNS_SETS.indexOf(user.pronouns) !== -1) {
       return {
         ...acc,
-        [user.pronouns]: [...acc[user.pronouns], user.username],
+        'she/her': [...acc['she/her'], user.username],
+      }
+    }
+
+    if (HE_HIM_PRONOUNS_SETS.indexOf(user.pronouns) !== -1) {
+      return {
+        ...acc,
+        'he/him': [...acc['he/him'], user.username],
+      }
+    }
+    if (user.pronouns === 'error') {
+      return {
+        ...acc,
+        error: [...acc.error, user.username],
       };
     }
 
@@ -150,7 +166,7 @@ async function calculateForNormalizedData(res: Response, data: NormalizedEventDa
     schedulePronouns = dedupePronounList((data.scheduled as string[]).reduce((acc, username) => {
       const submitter = submittersWithPronouns.find(item => item.username === username);
         
-      if (!submitter) {
+      if (!submitter || submitter.pronouns === 'error') {
         return {
           ...acc,
           notFound: [...acc.notFound, username],
@@ -161,11 +177,18 @@ async function calculateForNormalizedData(res: Response, data: NormalizedEventDa
         return { ...acc, none: [...acc.none, submitter.username] };
       }
 
-      if (submitter.pronouns === 'she/her' || submitter.pronouns === 'he/him') {
+      if (SHE_HER_PRONOUNS_SETS.indexOf(submitter.pronouns) !== -1) {
         return {
           ...acc,
-          [submitter.pronouns]: [...acc[submitter.pronouns], submitter.username],
-        };
+          'she/her': [...acc['she/her'], submitter.username],
+        }
+      }
+  
+      if (HE_HIM_PRONOUNS_SETS.indexOf(submitter.pronouns) !== -1) {
+        return {
+          ...acc,
+          'he/him': [...acc['he/him'], submitter.username],
+        }
       }
 
       return {

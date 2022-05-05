@@ -1,4 +1,5 @@
 import fetch from 'isomorphic-fetch';
+import { uniq } from 'lodash';
 
 export interface NormalizedRunnerData {
   username: string;
@@ -73,19 +74,24 @@ export async function fetchNormalizedGDQTrackerData(eventUrl: string): Promise<N
     [runner.pk]: runner.fields.name,
   }), {} as Record<number, string>);
 
+  console.log(uniq(runInfo
+    .filter(run => run.fields.order !== null)
+    .flatMap(run => run.fields.runners)
+    .map(id => runnerNameById[id])
+    .filter(name => name !== undefined && name !== null)));
   return {
     source: 'gdqtracker',
     name: marathonInfo[0].fields.name,
     runners: runnerInfo.map(runner => ({
       username: runner.fields.name,
-      pronouns: runner.fields.pronouns?.toLowerCase(),
-      twitch: runner.fields.stream?.replace('https://twitch.tv/', ''),
+      pronouns: runner.fields.pronouns?.toLowerCase().trim() || null,
+      twitch: runner.fields.stream?.replace(/(https?:\/\/?)?(www.)?twitch.tv\//, '')
     })),
-    scheduled: runInfo
+    scheduled: uniq(runInfo
       .filter(run => run.fields.order !== null)
       .flatMap(run => run.fields.runners)
       .map(id => runnerNameById[id])
-      .filter(name => name !== undefined && name !== null),
+      .filter(name => name !== undefined && name !== null)),
   };
 }
 

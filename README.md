@@ -8,7 +8,7 @@ publicly available data source for determining any sort of empirical metrics on 
 speedrunning. For this reason, the results are displayed as simply an aggregation of pronouns, rather than 
 as any sort of judgment on what genders those pronouns might represent.
 
-Any pronouns other than "he/him" and "she/her" (normalized for capitalization) are considered "other", as otherwise the data is extremely noisy - non-binary pronouns are not normalized across multiple data sources and I don't want to make assumptions. This
+Any pronouns other than "he", "she", "he/him" and "she/her" (whole string match, normalized for capitalization and spacing) are considered "other", as otherwise the data is extremely noisy - non-binary pronouns are not normalized across multiple data sources and I don't want to make assumptions. This
 tool is primarily designed for determining trends of minority gender representation overall rather than for
 more granular observations, as the data simply doesn't permit it.
 
