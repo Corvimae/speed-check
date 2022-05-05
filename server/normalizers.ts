@@ -85,7 +85,7 @@ export async function fetchNormalizedGDQTrackerData(eventUrl: string): Promise<N
     runners: runnerInfo.map(runner => ({
       username: runner.fields.name,
       pronouns: runner.fields.pronouns?.toLowerCase().trim() || null,
-      twitch: runner.fields.stream?.replace(/(https?:\/\/?)?(www.)?twitch.tv\//, '')
+      twitch: runner.fields.stream?.replace(/(https?:\/\/?)?(www.)?twitch.tv\//, '').trim() || null,
     })),
     scheduled: uniq(runInfo
       .filter(run => run.fields.order !== null)
