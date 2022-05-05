@@ -27,9 +27,23 @@ interface PronounResults {
   schedule: PronounCalculationBlock | null;
 }
 
+type Source = 'oengus' | 'horaro';
+
+const SOURCE_CONFIGS: Record<Source, { baseUrl: string; description: string; }> = {
+  oengus: {
+    baseUrl: 'https://v1.oengus.io/marathon/',
+    description: 'Oengus slug',
+  },
+  horaro: {
+    baseUrl: 'https://horaro.org/',
+    description: 'Horaro path',
+  },
+};
+
 const Home: NextPage = () => {
   const [marathonUrl, setMarathonUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [source, setSource] = useState<Source>('oengus');
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<PronounResults | null>(null);
 
@@ -38,15 +52,28 @@ const Home: NextPage = () => {
     setResults(null);
     setError(null);
 
-    const response = await fetch(`/calculate?slug=${encodeURIComponent(marathonUrl)}`);
+    const response = await fetch(`/calculate/${source}/${marathonUrl}`);
+
 
     if (response.status === 200) {
-      setResults(await response.json());
+      const results = await response.json();
+
+      setResults(results);
     } else {
-      setError('Either the marathon slug is invalid (it\'s case sensitive, by the way!), or Speed Check could not connect to the Oengus API.');
+      try {
+        const results = await response.json();
+
+        setError(results.error);
+      } catch (e) {
+        setError((e as Error).message);
+      }
     }
     setIsLoading(false);
-  }, [marathonUrl]);
+  }, [marathonUrl, source]);
+
+  const handleChangeSource = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSource(event.target.value as Source);
+  }, []);
 
   const handleChangeMarathonUrl = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setMarathonUrl(event.target.value);
@@ -84,10 +111,17 @@ const Home: NextPage = () => {
           <MethodologyLink href="https://github.com/corvimae/speed-check#pronoun-normalization-methodology" target="_blank" rel="noreferrer">
             See the methodology behind this tool
           </MethodologyLink>
+          <SourceSelectorContainer>
+            <label htmlFor="sourceSelector">Schedule source:</label>&nbsp;
+            <select id="sourceSelector" value={source} onChange={handleChangeSource}>
+              <option value='oengus'>Oengus</option>
+              <option value='horaro'>Horaro</option>
+            </select>
+          </SourceSelectorContainer>
           <InputSection>
-            <MarathonUrlInputLabel htmlFor="marathonUrlInput">Enter the Oengus slug for your marathon</MarathonUrlInputLabel>
+            <MarathonUrlInputLabel htmlFor="marathonUrlInput">Enter the {SOURCE_CONFIGS[source].description} for your marathon</MarathonUrlInputLabel>
             <UrlInputContainer>
-              <UrlPrefix>https://v1.oengus.io/marathon/</UrlPrefix>
+              <UrlPrefix>{SOURCE_CONFIGS[source].baseUrl}</UrlPrefix>
               <UrlInput id="marathonUrlInput" onChange={handleChangeMarathonUrl} />
             </UrlInputContainer>
             <SubmitButton disabled={marathonUrl.trim().length === 0 || isLoading} onClick={handleSubmit}>
@@ -108,10 +142,9 @@ const Home: NextPage = () => {
                 {totalErrors > 0 && (
                   <ErrorCard>
                     There were issues while normalizing pronouns for {totalErrors} runner{totalErrors !== 1 ? 's' : ''}. 
-                    Try again later for more accurate results.
                   </ErrorCard>
                 )}
-                <ResultsSubtitle>Submissions</ResultsSubtitle>
+                <ResultsSubtitle>{source === 'horaro' ? 'Schedule' : 'Submissions'}</ResultsSubtitle>
                 <ResultsTable>
                   <thead>
                     <tr>
@@ -409,6 +442,7 @@ const ResultsSubtitle = styled.h3`
 `;
 
 const ResultsTable = styled.table`
+  margin: 0 auto;
   font-size: 1.25rem;
 
   & th,
@@ -445,4 +479,10 @@ const ErrorCard = styled.div`
   color: #3f0909;
   margin: 1rem 0;
   font-size: 1.25rem;
+`;
+
+const SourceSelectorContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin: 0.5rem 0 1rem 0;
 `;
