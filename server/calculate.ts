@@ -72,65 +72,58 @@ async function fetchForUsername(baseUrl: string, submitter: NormalizedRunnerData
 
 const runnerDataCache = new NodeCache({ stdTTL: 3600 });
 
+export async function normalizePronouns(submitter: NormalizedRunnerData): Promise<string | null> {
+  if (!submitter.pronouns) {
+    if (runnerDataCache.has(submitter.username)) {
+      return runnerDataCache.get(submitter.username) as string;
+    }
+
+    try {
+      // Request from SRC
+      const srcUserData = await fetchForUsername('https://www.speedrun.com/api/v1/users/', submitter, 'speedruncom');
+
+      if (srcUserData?.data?.pronouns) {
+        runnerDataCache.set(submitter.username, srcUserData.data.pronouns.toLowerCase());
+
+        return srcUserData.data.pronouns.toLowerCase();
+      }
+
+      const twitchUserData = await fetchForUsername('https://pronouns.alejo.io/api/users/', submitter, 'twitch');
+
+      if (twitchUserData?.length > 0) {
+        let pronouns = 'other';
+
+        if (twitchUserData[0].pronoun_id === 'sheher') {
+          pronouns = 'she/her';
+        } else if (twitchUserData[0].pronoun_id === 'hehim') {
+          pronouns = 'he/him';
+        }
+
+        runnerDataCache.set(submitter.username, pronouns);
+
+        return pronouns;
+      }
+
+      return null;
+    } catch (e) {
+      console.error('Pronoun API request failed.');
+      console.error(e);
+
+      return 'error';
+    }
+  }
+
+  return submitter.pronouns;
+}
+
 const HE_HIM_PRONOUNS_SETS = ['he/him', 'he / him', 'he', 'him'];
 const SHE_HER_PRONOUNS_SETS = ['she/her', 'she / her', 'she', 'her'];
 
 export async function calculateForNormalizedData(data: NormalizedEventData): Promise<AggregationResult> {
-  const submittersWithPronounsPromises: Promise<NormalizedRunnerData>[] = data.runners.map(async (submitter: NormalizedRunnerData) => {
-    if (!submitter.pronouns) {
-      if (runnerDataCache.has(submitter.username)) {
-        return {
-          ...submitter,
-          pronouns: runnerDataCache.get(submitter.username) as string,
-        };
-      }
-
-      try {
-        // Request from SRC
-        const srcUserData = await fetchForUsername('https://www.speedrun.com/api/v1/users/', submitter, 'speedruncom');
-
-        if (srcUserData?.data?.pronouns) {
-          runnerDataCache.set(submitter.username, srcUserData.data.pronouns.toLowerCase());
-
-          return {
-            ...submitter,
-            pronouns: srcUserData.data.pronouns.toLowerCase(),
-          };
-        }
-
-        const twitchUserData = await fetchForUsername('https://pronouns.alejo.io/api/users/', submitter, 'twitch');
-
-        if (twitchUserData?.length > 0) {
-          let pronouns = 'other';
-
-          if (twitchUserData[0].pronoun_id === 'sheher') {
-            pronouns = 'she/her';
-          } else if (twitchUserData[0].pronoun_id === 'hehim') {
-            pronouns = 'he/him';
-          }
-
-          runnerDataCache.set(submitter.username, pronouns);
-
-          return {
-            ...submitter,
-            pronouns,
-          };
-        }
-
-        return submitter;
-      } catch (e) {
-        console.error('Pronoun API request failed.');
-        console.error(e);
-
-        return {
-          ...submitter,
-          pronouns: 'error',
-        };
-      }
-    }
-
-    return submitter;
-  }, [] as NormalizedRunnerData[]);
+  const submittersWithPronounsPromises: Promise<NormalizedRunnerData>[] = data.runners.map(async (submitter: NormalizedRunnerData) => ({
+    ...submitter,
+    pronouns: await normalizePronouns(submitter),
+  }), [] as NormalizedRunnerData[]);
 
   const submittersWithPronouns = await Promise.all(submittersWithPronounsPromises);
   

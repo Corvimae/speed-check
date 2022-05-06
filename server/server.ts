@@ -1,13 +1,12 @@
 import express from 'express';
 import next from 'next';
-import { calculateForNormalizedData } from './calculate';
+import { calculateForNormalizedData, normalizePronouns } from './calculate';
 import { fetchNormalizedGDQTrackerData, fetchNormalizedHoraroData, fetchNormalizedOengusData, NormalizedEventData, NormalizedRunnerData } from './normalizers';
 
 const port = parseInt(process.env.PORT ?? '3000', 10);
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
-
 
 app.prepare().then(async () => {
   try {
@@ -61,6 +60,13 @@ app.prepare().then(async () => {
       }
     });
     
+    server.get('/pronouns/:username', async (req, res) => {
+      res.json(await normalizePronouns({
+        username: req.params.username as string,
+        pronouns: null,
+      }));
+    });
+
     server.get('*', (req, res) => handle(req, res));
 
     server.listen(3000, (): void => {
