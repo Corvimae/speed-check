@@ -109,16 +109,22 @@ export async function fetchNormalizedHoraroData(organization: string, event: str
 
   if (runnerColumn === -1) throw new Error('Could not normalize Horaro data; runner column not found in schedule.');
   
+  const runners = (marathonInfo.schedule.items as HoraroScheduleRow[])
+    .flatMap(row => row.data[runnerColumn].split(','))
+    .flatMap(runner => runner.split(' vs '))
+    .flatMap(runner => runner.split(' vs. '))
+    .map(runner => runner.trim())
+    .map(runner => {
+      const match = /^\[([\w\s\d]+)\]\(((?:\/|https?:\/\/)[\w\d./?=#]+)\)$/.exec(runner);
+
+      return match ? match[1] : runner;
+    })
+    .map(username => ({ username, pronouns: null }));
+
   return {
     source: 'horaro',
     name: `${marathonInfo.schedule.event.name} - ${marathonInfo.schedule.name}`,
-    runners: (marathonInfo.schedule.items as HoraroScheduleRow[]).reduce((acc, row) => [
-      ...acc,
-      ...row.data[runnerColumn].split(',').map((name: String) => ({
-        username: name.trim(),
-        pronouns: null,
-      })),
-    ], [] as NormalizedRunnerData[]),
+    runners,
     scheduled: null,
   };
 }
